@@ -68,3 +68,22 @@ curl "http://localhost:8000/interrogate/eva?url=https://example.com/image.png"
 ```bash
 curl -X POST -F "file=@waifu.png" "http://localhost:8000/interrogate/pixai?threshold=0.5"
 ```
+
+## Kubernetes Deployment
+
+This service is ready for Kubernetes deployment with GPU support.
+
+1.  **Build and Push Image:**
+    You need to build the Docker image and push it to a registry accessible by your cluster (e.g., GHCR, Docker Hub).
+    ```bash
+    docker build -t ghcr.io/your-username/localtagger:latest .
+    docker push ghcr.io/your-username/localtagger:latest
+    ```
+
+2.  **Update Manifest:**
+    Edit `k8s/deployment.yaml` and replace the `image` field with your image URL.
+
+3.  **Deploy:**
+    ```bash
+    kubectl apply -f k8s/
+    ```

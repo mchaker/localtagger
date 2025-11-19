@@ -87,3 +87,9 @@ This service is ready for Kubernetes deployment with GPU support.
     ```bash
     kubectl apply -f k8s/
     ```
+
+### DevOps Notes (For Astro)
+
+1.  **Image Registry**: The `k8s/deployment.yaml` uses a placeholder image (`ghcr.io/mooshieblob1/localtagger:latest`). Please build the image and update the manifest to point to your internal registry if needed.
+2.  **GPU Requirements**: The deployment requests `nvidia.com/gpu: 1`. Ensure nodes have NVIDIA drivers and the **NVIDIA Container Toolkit** installed.
+3.  **Model Caching (Optimization)**: Models are downloaded to `/root/.cache/huggingface` on first use. To avoid re-downloading (5GB+) on pod restarts, consider mounting a **Persistent Volume (PVC)** to this path.

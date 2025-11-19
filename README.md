@@ -76,8 +76,8 @@ This service is ready for Kubernetes deployment with GPU support.
 1.  **Build and Push Image:**
     You need to build the Docker image and push it to a registry accessible by your cluster (e.g., GHCR, Docker Hub).
     ```bash
-    docker build -t ghcr.io/your-username/localtagger:latest .
-    docker push ghcr.io/your-username/localtagger:latest
+    docker build -t ghcr.io/mooshieblob1/localtagger:latest .
+    docker push ghcr.io/mooshieblob1/localtagger:latest
     ```
 
 2.  **Update Manifest:**

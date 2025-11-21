@@ -16,6 +16,8 @@ def test_endpoints(base_url, image_path, image_url):
         print(f"Status: {res.status_code}")
         # Truncate tags for display
         json_res = res.json()
+        if isinstance(json_res, list):
+            json_res = json_res[0]
         if "tag_string" in json_res:
             json_res["tag_string"] = json_res["tag_string"][:100] + "..."
         print(f"Response: {json_res}")
@@ -28,6 +30,8 @@ def test_endpoints(base_url, image_path, image_url):
         res = requests.get(f"{base_url}/interrogate", params={"url": image_url, "threshold": 0.35, "use_escape": False})
         print(f"Status: {res.status_code}")
         json_res = res.json()
+        if isinstance(json_res, list):
+            json_res = json_res[0]
         if "tag_string" in json_res:
             json_res["tag_string"] = json_res["tag_string"][:100] + "..."
         print(f"Response: {json_res}")

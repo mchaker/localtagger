@@ -16,7 +16,8 @@ spec:
     spec:
       containers:
       - name: localtagger
-        image: ghcr.io/mooshieblob1/localtagger:latest
+        image: ghcr.io/mchaker/localtagger:main
+        imagePullPolicy: Always
         ports:
         - containerPort: 8000
         resources:

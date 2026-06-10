@@ -266,6 +266,11 @@ async def kaloscope_infer(
 
 
 # Main Interrogation Endpoints (EVA02-Large)
+# Per-model routes are aliases until each model has its own weights loaded.
+@app.post("/interrogate/eva")
+@app.post("/interrogate/pixai")
+@app.post("/interrogate/camie")
+@app.post("/interrogate/taggerine")
 @app.post("/interrogate")
 async def interrogate_post(
     file: List[UploadFile] = File(...), 

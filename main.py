@@ -26,6 +26,15 @@ class ModelManager:
         self.wd14_session = None
         self.wd14_tags = None
         self.wd14_tag_names = None
+        self.kaloscope_session = None
+        self.kaloscope_labels = None
+
+    def _providers(self):
+        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        if 'CUDAExecutionProvider' not in ort.get_available_providers():
+            print("Warning: CUDAExecutionProvider not found for ONNX Runtime. Fallback to CPU.")
+            providers = ['CPUExecutionProvider']
+        return providers
 
     def load_wd14(self):
         if self.wd14_session is not None:
@@ -36,16 +45,26 @@ class ModelManager:
         model_path = hf_hub_download(repo_id=WD14_REPO, filename="model.onnx")
         tags_path = hf_hub_download(repo_id=WD14_REPO, filename="selected_tags.csv")
 
-        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
-        if 'CUDAExecutionProvider' not in ort.get_available_providers():
-            print("Warning: CUDAExecutionProvider not found for ONNX Runtime. Fallback to CPU.")
-            providers = ['CPUExecutionProvider']
-
-        self.wd14_session = ort.InferenceSession(model_path, providers=providers)
+        self.wd14_session = ort.InferenceSession(model_path, providers=self._providers())
         tags_df = pd.read_csv(tags_path)
         self.wd14_tags = tags_df
         self.wd14_tag_names = tags_df['name'].tolist()
         return self.wd14_session, self.wd14_tag_names
+
+    def load_kaloscope(self):
+        if self.kaloscope_session is not None:
+            return self.kaloscope_session, self.kaloscope_labels
+
+        print("Loading Kaloscope 2.0 (artist style classifier)...")
+        KALOSCOPE_REPO = "DraconicDragon/Kaloscope-onnx"
+        model_path = hf_hub_download(repo_id=KALOSCOPE_REPO, filename="v2.0/kaloscope_2-0.onnx")
+        labels_path = hf_hub_download(repo_id=KALOSCOPE_REPO, filename="v2.0/class_mapping.csv")
+
+        self.kaloscope_session = ort.InferenceSession(model_path, providers=self._providers())
+        labels_df = pd.read_csv(labels_path)
+        labels_df['class_name'] = labels_df['class_name'].str.strip("'")
+        self.kaloscope_labels = dict(zip(labels_df['class_id'], labels_df['class_name']))
+        return self.kaloscope_session, self.kaloscope_labels
 
 model_manager = ModelManager()
 
@@ -196,7 +215,55 @@ def run_wd14(images: List[Image.Image], threshold: float, use_spaces: bool = Fal
     
     return results
 
+def prepare_image_kaloscope(image: Image.Image, target_size: int = 448):
+    # ImageNet-style preprocessing (LSNet): RGB, [0,1], mean/std normalize, CHW
+    image = image.convert("RGB").resize((target_size, target_size), Image.Resampling.LANCZOS)
+    img = np.array(image, dtype=np.float32) / 255.0
+    mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+    std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+    img = (img - mean) / std
+    img = img.transpose((2, 0, 1))
+    return np.expand_dims(img, axis=0)
+
+
+def softmax(x: np.ndarray) -> np.ndarray:
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum(axis=0)
+
+
+def run_kaloscope(image: Image.Image, top_k: int = 10):
+    session, labels = model_manager.load_kaloscope()
+
+    # Input size from the model, fallback to 448 (Kaloscope 2.0 was trained at 448px)
+    try:
+        size = int(session.get_inputs()[0].shape[2])
+    except Exception:
+        size = 448
+
+    input_tensor = prepare_image_kaloscope(image, target_size=size)
+    input_name = session.get_inputs()[0].name
+    logits = session.run(None, {input_name: input_tensor})[0][0]
+
+    probs = softmax(logits)
+    top_indices = np.argsort(probs)[-top_k:][::-1]
+    return [
+        {"name": labels.get(int(i), f"unknown_{int(i)}"), "score": float(probs[i])}
+        for i in top_indices
+    ]
+
+
 # --- ENDPOINTS ---
+
+@app.post("/kaloscope/infer")
+async def kaloscope_infer(
+    file: UploadFile = File(...),
+    top_k: int = Query(10, ge=1, le=50, description="Number of top artist matches to return"),
+):
+    image_data = await file.read()
+    image = load_image_from_bytes(image_data)
+    artists = run_kaloscope(image, top_k=top_k)
+    return {"artists": artists, "model": "kaloscope-2.0"}
+
 
 # Main Interrogation Endpoints (EVA02-Large)
 @app.post("/interrogate")

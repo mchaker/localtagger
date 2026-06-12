@@ -1,0 +1,114 @@
+# Model catalog for localtagger.
+#
+# Adding a new model is a config change, not a code change: append an entry here
+# (and, if it needs a new inference path, a backend under app/backends/). The
+# `family` field selects which backend runs the model:
+#   wd14      -> imgutils.tagging.get_wd14_tags  (ONNX, auto-downloaded)
+#   camie     -> imgutils.tagging.get_camie_tags (ONNX, auto-downloaded)
+#   animetimm -> timm + safetensors              (gated, needs HF_TOKEN)
+#
+# `default: true` marks a model as enabled out-of-the-box. The ENABLED_MODELS
+# env var (comma-separated ids) overrides this set when provided.
+#
+# Per-tag `category` for animetimm: 0=general, 4=character, 9=rating.
+
+models:
+  # --- WD14 v3 (SmilingWolf) -------------------------------------------------
+  - id: wd-swinv2-v3
+    label: WD SwinV2 v3
+    description: Fast and balanced WD tagger. Good general-purpose default.
+    family: wd14
+    repo: SmilingWolf/wd-swinv2-tagger-v3
+    model_name: SwinV2_v3
+    gated: false
+    recommended: true
+    default: true
+    default_threshold: 0.35
+    default_character_threshold: 0.85
+
+  - id: wd-eva02-large-v3
+    label: WD EVA02-Large v3
+    description: Best WD tagger; larger and slower but highest quality.
+    family: wd14
+    repo: SmilingWolf/wd-eva02-large-tagger-v3
+    model_name: EVA02_Large
+    gated: false
+    recommended: true
+    default: true
+    default_threshold: 0.35
+    default_character_threshold: 0.85
+
+  # --- animetimm dbv4 --------------------------------------------------------
+  - id: animetimm-caformer-b36
+    label: animetimm CAFormer-B36 (dbv4)
+    description: Balanced animetimm dbv4 model, recommended by animetimm.
+    family: animetimm
+    repo: animetimm/caformer_b36.dbv4-full
+    model_name: ""
+    gated: true
+    recommended: true
+    default: true
+    default_threshold: 0.35
+    default_character_threshold: 0.85
+
+  # --- Camie v2 --------------------------------------------------------------
+  - id: camie-v2
+    label: Camie Tagger v2
+    description: Different feel, more inconsistent. Artist guessing is disabled.
+    family: camie
+    repo: Camais03/camie-tagger-v2
+    model_name: initial
+    gated: false
+    recommended: false
+    default: true
+    default_threshold: 0.35
+    default_character_threshold: 0.85
+
+  # --- Additional models (disabled by default; enable via ENABLED_MODELS) ----
+  - id: animetimm-mobilenetv4
+    label: animetimm MobileNetV4 (dbv4)
+    description: Instant tagger; smallest/fastest animetimm dbv4 model.
+    family: animetimm
+    repo: animetimm/mobilenetv4_conv_aa_large.dbv4-full
+    model_name: ""
+    gated: true
+    recommended: false
+    default: false
+    default_threshold: 0.35
+    default_character_threshold: 0.85
+
+  - id: animetimm-swinv2-base
+    label: animetimm SwinV2-Base (dbv4)
+    description: Fast and good animetimm dbv4 model.
+    family: animetimm
+    repo: animetimm/swinv2_base_window8_256.dbv4-full
+    model_name: ""
+    gated: true
+    recommended: false
+    default: false
+    default_threshold: 0.35
+    default_character_threshold: 0.85
+
+  - id: animetimm-eva02-large
+    label: animetimm EVA02-Large (dbv4)
+    description: Big but amazing animetimm dbv4 model.
+    family: animetimm
+    repo: animetimm/eva02_large_patch14_448.dbv4-full
+    model_name: ""
+    gated: true
+    recommended: false
+    default: false
+    default_threshold: 0.35
+    default_character_threshold: 0.85
+
+  - id: animetimm-convnextv2-huge
+    label: animetimm ConvNeXtV2-Huge (dbv4)
+    description: Huge but deadly accurate animetimm dbv4 model.
+    family: animetimm
+    repo: animetimm/convnextv2_huge.dbv4-full
+    model_name: ""
+    gated: true
+    recommended: false
+    default: false
+    default_threshold: 0.35
+    default_character_threshold: 0.85

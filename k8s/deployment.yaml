@@ -20,9 +20,30 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
+        env:
+        # Where models are cached (mount a PVC here to persist downloads).
+        - name: HF_HOME
+          value: /root/.cache/huggingface
+        # Required for the gated animetimm models. Create the secret with:
+        #   kubectl create secret generic hf-token --from-literal=token=hf_xxx
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-token
+              key: token
+              optional: true
+        # Optional: comma-separated model ids to enable (see app/models.yaml).
+        # Defaults to the models marked `default: true` when unset.
+        # - name: ENABLED_MODELS
+        #   value: "wd-swinv2-v3,wd-eva02-large-v3,animetimm-caformer-b36,camie-v2"
         resources:
           limits:
             nvidia.com/gpu: 1
+        # Persist the HuggingFace model cache across restarts: define a PVC named
+        # `localtagger-models` and uncomment this mount + the volume below.
+        # volumeMounts:
+        # - name: model-cache
+        #   mountPath: /root/.cache/huggingface
         livenessProbe:
           httpGet:
             path: /health
@@ -35,3 +56,7 @@ spec:
             port: 8000
           initialDelaySeconds: 5
           periodSeconds: 5
+      # volumes:
+      # - name: model-cache
+      #   persistentVolumeClaim:
+      #     claimName: localtagger-models

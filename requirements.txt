@@ -1,0 +1,19 @@
+# Web framework
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic>=2
+
+# Inference: imgutils (WD14 + Camie, ONNX) and timm (animetimm, safetensors)
+dghs-imgutils
+timm
+onnxruntime-gpu==1.17.1
+
+# Model hosting / data
+huggingface_hub
+pyyaml
+pandas
+numpy<2.0
+pillow
+opencv-python-headless
+requests

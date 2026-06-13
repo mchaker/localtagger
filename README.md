@@ -52,7 +52,7 @@ All configuration is via environment variables:
 | `ENABLED_MODELS` | models marked `default` in `models.yaml` | Comma-separated model ids to enable. |
 | `HF_HOME` | `~/.cache/huggingface` | Where models are downloaded/cached. |
 | `HF_ENDPOINT` | — | Point at a HuggingFace mirror for model hosting. |
-| `HF_TOKEN` | — | **Required for the gated animetimm models** (the repos require agreeing to share your email). Not needed at runtime if you prefetch — see below. |
+| `HF_TOKEN` | — | Optional. Not required for any default model (all animetimm models are now mirrored to public repos). Needed only if you add gated models to `models.yaml`. |
 | `HF_HUB_OFFLINE` | — | Set to `1` to serve entirely from the cache and never contact HuggingFace (and never need a token). Requires all enabled models to be prefetched first. |
 | `DEVICE` | `auto` | `cuda`, `cpu`, or `auto` (used by the animetimm PyTorch backend). |
 | `CATALOG_PATH` | `app/models.yaml` | Path to the model catalog file. |

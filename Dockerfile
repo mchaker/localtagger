@@ -24,6 +24,15 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/conda/lib/python3.10/site-packages/nvi
 ENV HF_HOME=/root/.cache/huggingface
 
 COPY app/ ./app/
+COPY scripts/ ./scripts/
+
+# Optional: bake all model weights into the image so the runtime needs no token.
+# Uses a BuildKit secret so the token is never written to a layer. The token's
+# account must have accepted the gated animetimm terms first. Enable with:
+#   DOCKER_BUILDKIT=1 docker build --secret id=hf_token,src=./hf_token.txt .
+# then run the container with HF_HUB_OFFLINE=1 (no token needed).
+# RUN --mount=type=secret,id=hf_token \
+#     HF_TOKEN="$(cat /run/secrets/hf_token)" python scripts/prefetch_models.py
 
 EXPOSE 8000
 

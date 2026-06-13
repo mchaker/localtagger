@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 
 import yaml
 
-VALID_FAMILIES = {"wd14", "camie", "animetimm"}
+VALID_FAMILIES = {"wd14", "pixai", "camie", "animetimm"}
 
 
 @dataclass(frozen=True)
@@ -19,6 +19,9 @@ class ModelSpec:
     id: str
     label: str
     description: str
+    # Display heading the frontend groups this model under (e.g. "WD Tagger v3").
+    # Falls back to ``label`` when omitted so the picker is never headingless.
+    group: str
     family: str
     repo: str
     model_name: str
@@ -64,6 +67,7 @@ def _parse_spec(raw: dict) -> ModelSpec:
         id=raw["id"],
         label=raw.get("label", raw["id"]),
         description=raw.get("description", ""),
+        group=raw.get("group") or raw.get("label", raw["id"]),
         family=family,
         repo=raw["repo"],
         model_name=raw.get("model_name", "") or "",

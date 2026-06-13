@@ -26,7 +26,7 @@ router = APIRouter()
 # catalog at request time, falling back to the default model when disabled.
 ALIASES = {
     "eva": "wd-eva02-large-v3",
-    "pixai": "wd-swinv2-v3",
+    "pixai": "pixai-v0.9",
     "camie": "camie-v2",
     "taggerine": "animetimm-caformer-b36",
 }

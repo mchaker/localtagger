@@ -25,6 +25,7 @@ async def list_models(
             id=spec.id,
             label=spec.label,
             description=spec.description,
+            group=spec.group,
             family=spec.family,
             recommended=spec.recommended,
             gated=spec.gated,

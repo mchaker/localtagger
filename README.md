@@ -5,16 +5,20 @@ tags** across multiple model families, designed for Kubernetes deployment with
 GPU support. It is the backend for *Farterrogator*.
 
 Inference is powered by [`dghs-imgutils`](https://dghs-imgutils.deepghs.org/)
-(WD14 v3 and Camie v2, ONNX) and [`timm`](https://github.com/huggingface/pytorch-image-models)
+(WD14 v3, Pixai v0.9 and Camie v2, ONNX) and
+[`timm`](https://github.com/huggingface/pytorch-image-models)
 (animetimm dbv4, PyTorch/safetensors), plus the **Kaloscope 2.0** artist-style
 classifier (ONNX).
 
 ## Features
--   **Multi-Model Tagging** — pick a model per request via `?model=<id>`:
-    -   **WD14 v3** (SmilingWolf): `wd-swinv2-v3`, `wd-eva02-large-v3`.
-    -   **animetimm dbv4**: `animetimm-caformer-b36` (+ mobilenetv4, swinv2-base,
-        eva02-large, convnextv2-huge available in the catalog).
-    -   **Camie v2**: `camie-v2`.
+-   **Multi-Model Tagging** — pick a model per request via `?model=<id>`. Models
+    are grouped for the picker (`group` → `label`):
+    -   **WD Tagger v3**: `wd-eva02-large-v3` (EVA02), `wd-swinv2-v3` (SwinV2),
+        `pixai-v0.9` (Pixai v0.9).
+    -   **Animetimm dbv4**: `animetimm-mobilenetv4` (MobileNetV4),
+        `animetimm-swinv2-base` (SwinV2), `animetimm-caformer-b36` (CAFormer),
+        `animetimm-eva02-large` (EVA02), `animetimm-convnextv2-huge` (ConvNeXt).
+    -   **Camie v2**: `camie-v2` (Camie).
 -   **Config-driven model catalog** — add models by editing
     [`app/models.yaml`](app/models.yaml); no code changes needed.
 -   **Model discovery** — `GET /models` lets the frontend list models without a
@@ -35,7 +39,7 @@ app/
   formatting.py      # tag-string formatting + hallucination filter
   image_utils.py     # image loading helpers
   schemas.py         # pydantic response models
-  backends/          # wd14, camie, animetimm, kaloscope inference
+  backends/          # wd14, pixai, camie, animetimm, kaloscope inference
   routers/           # interrogate, catalog (/models), kaloscope
 ```
 
@@ -48,12 +52,32 @@ All configuration is via environment variables:
 | `ENABLED_MODELS` | models marked `default` in `models.yaml` | Comma-separated model ids to enable. |
 | `HF_HOME` | `~/.cache/huggingface` | Where models are downloaded/cached. |
 | `HF_ENDPOINT` | — | Point at a HuggingFace mirror for model hosting. |
-| `HF_TOKEN` | — | **Required for the gated animetimm models** (the repos require agreeing to share your email). |
+| `HF_TOKEN` | — | **Required for the gated animetimm models** (the repos require agreeing to share your email). Not needed at runtime if you prefetch — see below. |
+| `HF_HUB_OFFLINE` | — | Set to `1` to serve entirely from the cache and never contact HuggingFace (and never need a token). Requires all enabled models to be prefetched first. |
 | `DEVICE` | `auto` | `cuda`, `cpu`, or `auto` (used by the animetimm PyTorch backend). |
 | `CATALOG_PATH` | `app/models.yaml` | Path to the model catalog file. |
 
 > **animetimm models are gated.** Accept the terms on each model's HuggingFace
-> page, then provide an `HF_TOKEN` so the backend can download them.
+> page first (a token alone cannot — the token's account must have clicked
+> "Agree and access"), then provide an `HF_TOKEN` so the backend can download them.
+
+### Prefetch weights with a throwaway token
+
+To run the service without a standing HuggingFace token, download every enabled
+model once into a persistent `HF_HOME`, then serve in offline mode:
+
+```bash
+# 1. one-time, with a token whose account has accepted the animetimm terms:
+HF_TOKEN=hf_xxx HF_HOME=/data/hf python scripts/prefetch_models.py
+
+# 2. revoke the token, then run offline (no token, no network needed):
+HF_HUB_OFFLINE=1 HF_HOME=/data/hf python -m app.main
+```
+
+Point `HF_HOME` at the same volume the service mounts so the warmed cache is the
+cache it reads. `HF_HUB_OFFLINE=1` is what lets you drop the token: without it,
+`huggingface_hub` re-validates the gated repos with an authenticated request on
+every load even when the weights are already cached.
 
 ## Kubernetes Deployment
 
@@ -89,8 +113,9 @@ kubectl apply -f k8s/
   "models": [
     {
       "id": "wd-swinv2-v3",
-      "label": "WD SwinV2 v3",
-      "description": "Fast and balanced WD tagger. Good general-purpose default.",
+      "label": "SwinV2",
+      "description": "fast and balanced wd",
+      "group": "WD Tagger v3",
       "family": "wd14",
       "recommended": true,
       "gated": false,
@@ -102,7 +127,9 @@ kubectl apply -f k8s/
 }
 ```
 
-The frontend should drive its model picker from this endpoint. Strings are
+Build a two-level picker from each model's `group` (heading) and `label` (item),
+with `description` as the subtitle. The frontend should drive its picker from
+this endpoint. Strings are
 stable English keys/labels; **i18n is owned by the frontend** (translate by `id`).
 
 ### `POST /interrogate` — tag uploaded images

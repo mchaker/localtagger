@@ -10,10 +10,12 @@ from app.catalog import ModelSpec
 from .animetimm import AnimetimmTagger
 from .base import Tagger
 from .camie import CamieTagger
+from .pixai import PixaiTagger
 from .wd14 import WD14Tagger
 
 _FAMILY_BACKENDS = {
     "wd14": WD14Tagger,
+    "pixai": PixaiTagger,
     "camie": CamieTagger,
     "animetimm": AnimetimmTagger,
 }

@@ -19,6 +19,8 @@ class ModelInfo(BaseModel):
     id: str
     label: str
     description: str
+    # Display heading to group models under in the picker (e.g. "WD Tagger v3").
+    group: str
     family: str
     recommended: bool
     gated: bool

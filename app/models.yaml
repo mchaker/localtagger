@@ -65,9 +65,9 @@ models:
     label: MobileNetV4
     description: instant tagger
     family: animetimm
-    repo: animetimm/mobilenetv4_conv_aa_large.dbv4-full
+    repo: Mooshie/mobilenetv4_conv_aa_large.dbv4-full
     model_name: ""
-    gated: true
+    gated: false
     recommended: false
     default: true
     default_threshold: 0.35
@@ -78,9 +78,9 @@ models:
     label: SwinV2
     description: fast and good
     family: animetimm
-    repo: animetimm/swinv2_base_window8_256.dbv4-full
+    repo: Mooshie/swinv2_base_window8_256.dbv4-full
     model_name: ""
-    gated: true
+    gated: false
     recommended: false
     default: true
     default_threshold: 0.35
@@ -91,9 +91,9 @@ models:
     label: CAFormer
     description: balanced and recommended by animetimm
     family: animetimm
-    repo: animetimm/caformer_b36.dbv4-full
+    repo: Mooshie/caformer_b36.dbv4-full
     model_name: ""
-    gated: true
+    gated: false
     recommended: true
     default: true
     default_threshold: 0.35
@@ -104,9 +104,9 @@ models:
     label: EVA02
     description: pretty big but amazing
     family: animetimm
-    repo: animetimm/eva02_large_patch14_448.dbv4-full
+    repo: Mooshie/eva02_large_patch14_448.dbv4-full
     model_name: ""
-    gated: true
+    gated: false
     recommended: false
     default: true
     default_threshold: 0.35
@@ -117,9 +117,9 @@ models:
     label: ConvNeXt
     description: huge but deadly accurate
     family: animetimm
-    repo: animetimm/convnextv2_huge.dbv4-full
+    repo: Mooshie/convnextv2_huge.dbv4-full
     model_name: ""
-    gated: true
+    gated: false
     recommended: false
     default: true
     default_threshold: 0.35

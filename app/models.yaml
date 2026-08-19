@@ -23,9 +23,9 @@
 models:
   # --- WD Tagger v3 ----------------------------------------------------------
   - id: wd-eva02-large-v3
-    group: WD Tagger v3
+    group: wdtagger
     label: EVA02
-    description: the best wd tagger
+    description: the best of the original wd taggers
     family: wd14
     repo: SmilingWolf/wd-eva02-large-tagger-v3
     model_name: EVA02_Large
@@ -36,9 +36,9 @@ models:
     default_character_threshold: 0.85
 
   - id: wd-swinv2-v3
-    group: WD Tagger v3
+    group: wdtagger
     label: SwinV2
-    description: fast and balanced wd
+    description: fast and balanced predecessor to eva02
     family: wd14
     repo: SmilingWolf/wd-swinv2-tagger-v3
     model_name: SwinV2_v3
@@ -49,22 +49,22 @@ models:
     default_character_threshold: 0.85
 
   - id: wd-eva02-canary-2026
-    group: WD Tagger v3
+    group: wdtagger
     label: EVA02 Canary
-    description: eva02 fine-tune with 6k new tags, 2026-05 cutoff
+    description: wd eva02 updated to 2026
     family: wd14_st
     repo: ashen-sensored/wd-eva02-tagger-2026-canary
     model_name: ""
     gated: false
-    recommended: false
+    recommended: true
     default: true
     default_threshold: 0.55
     default_character_threshold: 0.8
 
   - id: pixai-v0.9
-    group: WD Tagger v3
+    group: wdtagger
     label: Pixai v0.9
-    description: wd eva02 but broader and inconsistent
+    description: eva02 trained further but inconsistent
     family: pixai
     repo: pixai-labs/pixai-tagger-v0.9
     model_name: v0.9
@@ -76,7 +76,7 @@ models:
 
   # --- Animetimm dbv4 --------------------------------------------------------
   - id: animetimm-mobilenetv4
-    group: Animetimm dbv4
+    group: animetimm
     label: MobileNetV4
     description: mini instant tagger
     family: animetimm
@@ -89,7 +89,7 @@ models:
     default_character_threshold: 0.85
 
   - id: animetimm-swinv2-base
-    group: Animetimm dbv4
+    group: animetimm
     label: SwinV2
     description: fast and good
     family: animetimm
@@ -102,20 +102,20 @@ models:
     default_character_threshold: 0.85
 
   - id: animetimm-caformer-b36
-    group: Animetimm dbv4
+    group: animetimm
     label: CAFormer
     description: balanced and recommended by animetimm
     family: animetimm
     repo: Mooshie/caformer_b36.dbv4-full
     model_name: ""
     gated: false
-    recommended: true
+    recommended: false
     default: true
     default_threshold: 0.35
     default_character_threshold: 0.85
 
   - id: animetimm-eva02-large
-    group: Animetimm dbv4
+    group: animetimm
     label: EVA02
     description: pretty big but amazing
     family: animetimm
@@ -128,21 +128,21 @@ models:
     default_character_threshold: 0.85
 
   - id: animetimm-convnextv2-huge
-    group: Animetimm dbv4
+    group: animetimm
     label: ConvNeXt
     description: huge but deadly accurate
     family: animetimm
     repo: Mooshie/convnextv2_huge.dbv4-full
     model_name: ""
     gated: false
-    recommended: false
+    recommended: true
     default: true
     default_threshold: 0.35
     default_character_threshold: 0.85
 
   # --- Camie v2 --------------------------------------------------------------
   - id: camie-v2
-    group: Camie v2
+    group: camie
     label: Camie
     description: different feel and more inconsistent
     family: camie

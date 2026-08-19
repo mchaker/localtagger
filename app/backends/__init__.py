@@ -12,12 +12,14 @@ from .base import Tagger
 from .camie import CamieTagger
 from .pixai import PixaiTagger
 from .wd14 import WD14Tagger
+from .wd14_st import WD14SafetensorsTagger
 
 _FAMILY_BACKENDS = {
     "wd14": WD14Tagger,
     "pixai": PixaiTagger,
     "camie": CamieTagger,
     "animetimm": AnimetimmTagger,
+    "wd14_st": WD14SafetensorsTagger,
 }
 
 

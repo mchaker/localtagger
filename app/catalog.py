@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 
 import yaml
 
-VALID_FAMILIES = {"wd14", "pixai", "camie", "animetimm"}
+VALID_FAMILIES = {"wd14", "pixai", "camie", "animetimm", "wd14_st"}
 
 
 @dataclass(frozen=True)

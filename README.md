@@ -7,14 +7,14 @@ GPU support. It is the backend for *Farterrogator*.
 Inference is powered by [`dghs-imgutils`](https://dghs-imgutils.deepghs.org/)
 (WD14 v3, Pixai v0.9 and Camie v2, ONNX) and
 [`timm`](https://github.com/huggingface/pytorch-image-models)
-(animetimm dbv4, PyTorch/safetensors), plus the **Kaloscope 2.0** artist-style
-classifier (ONNX).
+(animetimm dbv4 and safetensors-only WD-family taggers, PyTorch/safetensors),
+plus the **Kaloscope 2.0** artist-style classifier (ONNX).
 
 ## Features
 -   **Multi-Model Tagging** — pick a model per request via `?model=<id>`. Models
     are grouped for the picker (`group` → `label`):
     -   **WD Tagger v3**: `wd-eva02-large-v3` (EVA02), `wd-swinv2-v3` (SwinV2),
-        `pixai-v0.9` (Pixai v0.9).
+        `wd-eva02-canary-2026` (EVA02 Canary), `pixai-v0.9` (Pixai v0.9).
     -   **Animetimm dbv4**: `animetimm-mobilenetv4` (MobileNetV4),
         `animetimm-swinv2-base` (SwinV2), `animetimm-caformer-b36` (CAFormer),
         `animetimm-eva02-large` (EVA02), `animetimm-convnextv2-huge` (ConvNeXt).

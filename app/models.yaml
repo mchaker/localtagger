@@ -7,6 +7,8 @@
 #   pixai     -> imgutils.tagging.get_pixai_tags  (ONNX, auto-downloaded)
 #   camie     -> imgutils.tagging.get_camie_tags  (ONNX, auto-downloaded)
 #   animetimm -> timm + safetensors               (gated, needs HF_TOKEN)
+#   wd14_st   -> timm + safetensors, WD14 preprocessing (ungated; for WD-family
+#                taggers published without an ONNX export)
 #
 # `group` is the display heading the frontend groups models under (e.g. all
 # WD-family taggers sit beneath "WD Tagger v3"). `label` is the short
@@ -45,6 +47,19 @@ models:
     default: true
     default_threshold: 0.35
     default_character_threshold: 0.85
+
+  - id: wd-eva02-canary-2026
+    group: WD Tagger v3
+    label: EVA02 Canary
+    description: eva02 fine-tune with 6k new tags, 2026-05 cutoff
+    family: wd14_st
+    repo: ashen-sensored/wd-eva02-tagger-2026-canary
+    model_name: ""
+    gated: false
+    recommended: false
+    default: true
+    default_threshold: 0.55
+    default_character_threshold: 0.8
 
   - id: pixai-v0.9
     group: WD Tagger v3

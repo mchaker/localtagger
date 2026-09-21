@@ -1,8 +1,8 @@
 """Common tagger interface.
 
 A :class:`Tagger` wraps one model. ``tag()`` returns one ``TagResult`` per input
-image, each holding the rating / general / character tag dicts. Routers merge
-general+character into the flat ``tags`` map and run :func:`app.formatting.format_tags`.
+image, each holding per-category tag dicts. Routers merge non-rating categories
+into the flat ``tags`` map and run :func:`app.formatting.format_tags`.
 """
 
 from abc import ABC, abstractmethod
@@ -19,11 +19,17 @@ class TagResult:
     general: Dict[str, float] = field(default_factory=dict)
     character: Dict[str, float] = field(default_factory=dict)
     rating: Dict[str, float] = field(default_factory=dict)
+    copyright: Dict[str, float] = field(default_factory=dict)
+    artist: Dict[str, float] = field(default_factory=dict)
+    meta: Dict[str, float] = field(default_factory=dict)
 
     def merged(self) -> Dict[str, float]:
-        """General + character tags as a single map (backward-compat shape)."""
+        """All non-rating tags as a single map (backward-compatible shape)."""
         merged = dict(self.general)
         merged.update(self.character)
+        merged.update(self.copyright)
+        merged.update(self.artist)
+        merged.update(self.meta)
         return merged
 
 
@@ -55,6 +61,7 @@ class Tagger(ABC):
         images: List[Image.Image],
         general_threshold: Optional[float] = None,
         character_threshold: Optional[float] = None,
+        category_thresholds: Optional[Dict[str, float]] = None,
     ) -> List[TagResult]:
         if not self._loaded:
             self.load()
@@ -64,7 +71,17 @@ class Tagger(ABC):
             if character_threshold is None
             else character_threshold
         )
-        return [self._tag_one(img, gt, ct) for img in images]
+        thresholds = {**self.spec.default_thresholds, **(category_thresholds or {})}
+        results = [self._tag_one(img, gt, ct) for img in images]
+        for result in results:
+            for category in ("copyright", "artist", "meta", "rating"):
+                if category in thresholds:
+                    tags = getattr(result, category)
+                    setattr(result, category, {
+                        name: score for name, score in tags.items()
+                        if score >= thresholds[category]
+                    })
+        return results
 
     def unload(self) -> None:
         """Release model resources. Override where it matters (e.g. torch/VRAM)."""

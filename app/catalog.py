@@ -5,13 +5,13 @@ them. It is also what the ``GET /models`` endpoint exposes to the frontend, so
 new models can be surfaced without a frontend redeploy.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import yaml
 
-VALID_FAMILIES = {"wd14", "pixai", "camie", "animetimm", "wd14_st"}
+VALID_FAMILIES = {"wd14", "pixai", "pixai_transformers", "camie", "animetimm", "wd14_st"}
 
 
 @dataclass(frozen=True)
@@ -30,6 +30,8 @@ class ModelSpec:
     default: bool
     default_threshold: float
     default_character_threshold: float
+    default_thresholds: Dict[str, float] = field(default_factory=dict)
+    dtype: str = "float32"
 
 
 class Catalog:
@@ -76,6 +78,8 @@ def _parse_spec(raw: dict) -> ModelSpec:
         default=bool(raw.get("default", False)),
         default_threshold=float(raw.get("default_threshold", 0.35)),
         default_character_threshold=float(raw.get("default_character_threshold", 0.85)),
+        default_thresholds={k: float(v) for k, v in raw.get("default_thresholds", {}).items()},
+        dtype=raw.get("dtype", "float32"),
     )
 
 

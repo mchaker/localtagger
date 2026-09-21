@@ -8,7 +8,9 @@ Inference is powered by [`dghs-imgutils`](https://dghs-imgutils.deepghs.org/)
 (WD14 v3, Pixai v0.9 and Camie v2, ONNX) and
 [`timm`](https://github.com/huggingface/pytorch-image-models)
 (animetimm dbv4 and safetensors-only WD-family taggers, PyTorch/safetensors),
-plus the **Kaloscope 2.0** artist-style classifier (ONNX).
+[PixAI v1.0](https://huggingface.co/pixai-labs/pixai-tagger-v1.0) via its native
+Transformers pipeline (PyTorch), plus the **Kaloscope 2.0** artist-style classifier
+(ONNX).
 
 ## Features
 -   **Multi-Model Tagging** — pick a model per request via `?model=<id>`. Models
@@ -19,6 +21,7 @@ plus the **Kaloscope 2.0** artist-style classifier (ONNX).
         `animetimm-swinv2-base` (SwinV2), `animetimm-caformer-b36` (CAFormer),
         `animetimm-eva02-large` (EVA02), `animetimm-convnextv2-huge` (ConvNeXt).
     -   **Camie v2**: `camie-v2` (Camie).
+    -   **PixAI**: `pixai-v1.0` (enabled by default), `pixai-v1.0-bf16` (opt-in).
 -   **Config-driven model catalog** — add models by editing
     [`app/models.yaml`](app/models.yaml); no code changes needed.
 -   **Model discovery** — `GET /models` lets the frontend list models without a
@@ -54,7 +57,7 @@ All configuration is via environment variables:
 | `HF_ENDPOINT` | — | Point at a HuggingFace mirror for model hosting. |
 | `HF_TOKEN` | — | Optional. Not required for any default model (all animetimm models are now mirrored to public repos). Needed only if you add gated models to `models.yaml`. |
 | `HF_HUB_OFFLINE` | — | Set to `1` to serve entirely from the cache and never contact HuggingFace (and never need a token). Requires all enabled models to be prefetched first. |
-| `DEVICE` | `auto` | `cuda`, `cpu`, or `auto` (used by the animetimm PyTorch backend). |
+| `DEVICE` | `auto` | `cuda`, `cpu`, or `auto` (used by the PyTorch backends). |
 | `CATALOG_PATH` | `app/models.yaml` | Path to the model catalog file. |
 
 > **animetimm models are gated.** Accept the terms on each model's HuggingFace
@@ -78,6 +81,27 @@ Point `HF_HOME` at the same volume the service mounts so the warmed cache is the
 cache it reads. `HF_HUB_OFFLINE=1` is what lets you drop the token: without it,
 `huggingface_hub` re-validates the gated repos with an authenticated request on
 every load even when the weights are already cached.
+
+## PixAI v1.0
+
+`pixai-v1.0` loads the official checkpoint and its custom Transformers code on
+first use (`trust_remote_code=True`). No deepghs ONNX conversion is needed.
+The native processor preserves the model's 1008 × 1008 resize/pad behavior.
+Its `style` labels are exposed as `artist` in the API and Farterrogator.
+
+The recommended cutoffs are general **0.17**, character **0.27**, copyright
+**0.24**, artist/style **0.15**, meta **0.17**, and rating **0.41**. `/models`
+exposes the latter four in `default_thresholds`, alongside the existing
+`default_threshold` and `default_character_threshold` fields. Explicit request
+parameters override them, including when downloading ZIP datasets.
+
+To use the [mixed-BF16 checkpoint](https://huggingface.co/DraconicDragon/pixai-tagger-v1.0-mixed-bf16),
+include `pixai-v1.0-bf16` in `ENABLED_MODELS`. This setting replaces the default
+model list, so include any other models you want to keep. Supported CUDA GPUs
+use BF16 with an FP32 classification head; CPU and unsupported GPUs use FP32.
+Both variants need the updated PyTorch/Transformers dependencies in this repo.
+Deploy the backend changes before selecting these models in Farterrogator;
+the frontend discovers only models advertised by the selected server.
 
 ## Kubernetes Deployment
 
@@ -142,8 +166,9 @@ Supports single image and batch processing.
 | :--- | :--- | :--- | :--- |
 | `file` | File(s) | Required | Image file(s). Send multiple (same field name) for batching. |
 | `model` | string | first enabled model | Model id from `/models`. |
-| `threshold` | float | `0.35` | General-tag confidence threshold. |
-| `character_threshold` | float | `0.85` | Character-tag confidence threshold. |
+| `threshold` | float | model default | General-tag confidence threshold. |
+| `character_threshold` | float | model default | Character-tag confidence threshold. |
+| `copyright_threshold`, `artist_threshold`, `meta_threshold`, `rating_threshold` | float | model default | Category cutoffs for models with these output maps, including PixAI v1.0. |
 | `output_format` | string | `"json"` | `"zip"` for a dataset download, `"json"` for an API response. |
 | `trigger_word` | string | `""` | Optional word to prepend to tags (e.g. `sks_person`). |
 | `random_order` | boolean | `false` | Shuffle tags (useful for LoRA training). |
@@ -182,9 +207,9 @@ to concrete models for backward compatibility.
 ]
 ```
 
-*   **`tags`**: general + character tags merged, as `{name: score}` (0.0–1.0).
+*   **`tags`**: all non-rating categories merged, as `{name: score}` (0.0–1.0).
 *   **`tag_string`**: comma-separated, ready for display or `.txt` files.
-*   **`rating` / `character`**: richer breakdown for newer clients (safe to ignore).
+*   **`rating` / `character` / `copyright` / `artist` / `meta`**: category maps for newer clients (safe to ignore).
 
 ### Batch Processing
 
@@ -232,6 +257,10 @@ python -m app.main                   # serves on :8000
 # smoke tests
 python test_api.py --image some.jpg --model wd-swinv2-v3
 python test_batch.py --model wd-swinv2-v3 img1.jpg img2.jpg
+
+# PixAI API/adapter regressions (no model downloads)
+pip install httpx
+python -m unittest discover -s tests -v
 ```
 
 Or with Docker:

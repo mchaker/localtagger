@@ -5,6 +5,7 @@
 # `family` field selects which backend runs the model:
 #   wd14      -> imgutils.tagging.get_wd14_tags   (ONNX, auto-downloaded)
 #   pixai     -> imgutils.tagging.get_pixai_tags  (ONNX, auto-downloaded)
+#   pixai_transformers -> native PixAI pipeline (PyTorch, no ONNX required)
 #   camie     -> imgutils.tagging.get_camie_tags  (ONNX, auto-downloaded)
 #   animetimm -> timm + safetensors               (gated, needs HF_TOKEN)
 #   wd14_st   -> timm + safetensors, WD14 preprocessing (ungated; for WD-family
@@ -73,6 +74,40 @@ models:
     default: true
     default_threshold: 0.35
     default_character_threshold: 0.85
+
+  # --- PixAI ----------------------------------------------------------------
+  - id: pixai-v1.0
+    group: pixai
+    label: PixAI v1.0
+    description: SAM3-based tagger with 30,877 tags across six categories
+    family: pixai_transformers
+    repo: pixai-labs/pixai-tagger-v1.0
+    default: true
+    default_threshold: 0.17
+    default_character_threshold: 0.27
+    default_thresholds:
+      copyright: 0.24
+      artist: 0.15
+      meta: 0.17
+      rating: 0.41
+
+  # Optional smaller checkpoint; enable explicitly with ENABLED_MODELS.
+  # CPU and GPUs without BF16 support use FP32 inference.
+  - id: pixai-v1.0-bf16
+    group: pixai
+    label: PixAI v1.0 BF16
+    description: mixed BF16 version of PixAI v1.0 with an FP32 classification head
+    family: pixai_transformers
+    repo: DraconicDragon/pixai-tagger-v1.0-mixed-bf16
+    dtype: bfloat16
+    default: false
+    default_threshold: 0.17
+    default_character_threshold: 0.27
+    default_thresholds:
+      copyright: 0.24
+      artist: 0.15
+      meta: 0.17
+      rating: 0.41
 
   # --- Animetimm dbv4 --------------------------------------------------------
   - id: animetimm-mobilenetv4

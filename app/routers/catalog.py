@@ -32,6 +32,7 @@ async def list_models(
             loaded=manager.is_loaded(spec.id),
             default_threshold=spec.default_threshold,
             default_character_threshold=spec.default_character_threshold,
+            default_thresholds=spec.default_thresholds,
         )
         for spec in catalog.specs
     ]

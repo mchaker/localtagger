@@ -8,6 +8,11 @@ pydantic>=2
 # safetensors). >=0.19 is required for imgutils.tagging.get_pixai_tags.
 dghs-imgutils>=0.19.0
 timm
+# PixAI v1.0 ships a custom Transformers pipeline. Keep the torch/vision pair
+# compatible with the CUDA 12.1 + cuDNN 8 image and the existing ONNX runtime.
+torch==2.2.2
+torchvision==0.17.2
+transformers>=4.57.6,<5
 onnxruntime-gpu==1.17.1
 
 # Model hosting / data

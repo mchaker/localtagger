@@ -6,12 +6,15 @@ from pydantic import BaseModel
 
 
 class InterrogateResult(BaseModel):
-    # Flat {tag: score} map (general + character merged) for frontend compat.
+    # Flat {tag: score} map (all non-rating categories) for frontend compat.
     tags: Dict[str, float]
     tag_string: str
     # Richer breakdown for newer clients; safe to ignore.
     rating: Dict[str, float] = {}
     character: Dict[str, float] = {}
+    copyright: Dict[str, float] = {}
+    artist: Dict[str, float] = {}
+    meta: Dict[str, float] = {}
     model: str = ""
 
 
@@ -27,6 +30,7 @@ class ModelInfo(BaseModel):
     loaded: bool
     default_threshold: float
     default_character_threshold: float
+    default_thresholds: Dict[str, float] = {}
 
 
 class ModelsResponse(BaseModel):

@@ -51,7 +51,7 @@ def _tag_images(
     model_id: str,
     images: List[Image.Image],
     *,
-    threshold: float,
+    threshold: Optional[float],
     character_threshold: Optional[float],
     use_spaces: bool,
     use_escape: bool,
@@ -59,9 +59,24 @@ def _tag_images(
     score_descend: bool,
     trigger_word: str,
     random_order: bool,
+    copyright_threshold: Optional[float] = None,
+    artist_threshold: Optional[float] = None,
+    meta_threshold: Optional[float] = None,
+    rating_threshold: Optional[float] = None,
 ) -> List[dict]:
     tagger = manager.get(model_id)
-    results = tagger.tag(images, general_threshold=threshold, character_threshold=character_threshold)
+    category_thresholds = {
+        category: value for category, value in {
+            "copyright": copyright_threshold,
+            "artist": artist_threshold,
+            "meta": meta_threshold,
+            "rating": rating_threshold,
+        }.items() if value is not None
+    }
+    results = tagger.tag(
+        images, general_threshold=threshold, character_threshold=character_threshold,
+        category_thresholds=category_thresholds,
+    )
 
     formatted = []
     for res in results:
@@ -80,6 +95,9 @@ def _tag_images(
                 "tag_string": tag_string,
                 "rating": res.rating,
                 "character": res.character,
+                "copyright": res.copyright,
+                "artist": res.artist,
+                "meta": res.meta,
                 "model": model_id,
             }
         )
@@ -92,8 +110,12 @@ async def interrogate_post(
     alias: Optional[str] = None,
     file: List[UploadFile] = File(...),
     model: Optional[str] = Query(None, description="Model id from /models"),
-    threshold: float = 0.35,
+    threshold: Optional[float] = Query(None),
     character_threshold: Optional[float] = Query(None),
+    copyright_threshold: Optional[float] = Query(None, ge=0, le=1),
+    artist_threshold: Optional[float] = Query(None, ge=0, le=1),
+    meta_threshold: Optional[float] = Query(None, ge=0, le=1),
+    rating_threshold: Optional[float] = Query(None, ge=0, le=1),
     use_spaces: bool = False,
     use_escape: bool = True,
     include_ranks: bool = False,
@@ -116,6 +138,10 @@ async def interrogate_post(
             file,
             threshold=threshold,
             character_threshold=character_threshold,
+            copyright_threshold=copyright_threshold,
+            artist_threshold=artist_threshold,
+            meta_threshold=meta_threshold,
+            rating_threshold=rating_threshold,
             use_spaces=use_spaces,
             use_escape=use_escape,
             include_ranks=include_ranks,
@@ -135,6 +161,10 @@ async def interrogate_post(
                 batch_images,
                 threshold=threshold,
                 character_threshold=character_threshold,
+                copyright_threshold=copyright_threshold,
+                artist_threshold=artist_threshold,
+                meta_threshold=meta_threshold,
+                rating_threshold=rating_threshold,
                 use_spaces=use_spaces,
                 use_escape=use_escape,
                 include_ranks=include_ranks,
@@ -185,8 +215,12 @@ async def _zip_response(manager, model_id, file, **fmt):
 async def interrogate_get(
     url: List[str] = Query(...),
     model: Optional[str] = Query(None, description="Model id from /models"),
-    threshold: float = 0.35,
+    threshold: Optional[float] = Query(None),
     character_threshold: Optional[float] = Query(None),
+    copyright_threshold: Optional[float] = Query(None, ge=0, le=1),
+    artist_threshold: Optional[float] = Query(None, ge=0, le=1),
+    meta_threshold: Optional[float] = Query(None, ge=0, le=1),
+    rating_threshold: Optional[float] = Query(None, ge=0, le=1),
     use_spaces: bool = False,
     use_escape: bool = True,
     include_ranks: bool = False,
@@ -203,6 +237,10 @@ async def interrogate_get(
         images,
         threshold=threshold,
         character_threshold=character_threshold,
+        copyright_threshold=copyright_threshold,
+        artist_threshold=artist_threshold,
+        meta_threshold=meta_threshold,
+        rating_threshold=rating_threshold,
         use_spaces=use_spaces,
         use_escape=use_escape,
         include_ranks=include_ranks,

@@ -5,6 +5,7 @@ classifier, distinct from the Danbooru taggers, so it has its own small API
 rather than implementing the Tagger interface.
 """
 
+import threading
 from typing import Dict, List
 
 import numpy as np
@@ -35,6 +36,7 @@ class KaloscopeClassifier:
     def __init__(self):
         self._session = None
         self._labels: Dict[int, str] = {}
+        self._load_lock = threading.Lock()
 
     @property
     def loaded(self) -> bool:
@@ -51,18 +53,24 @@ class KaloscopeClassifier:
     def load(self) -> None:
         if self._session is not None:
             return
-        import onnxruntime as ort
-        import pandas as pd
-        from huggingface_hub import hf_hub_download
+        # Runs in worker threads: load once, and publish the session last so a
+        # concurrent caller never sees it without its labels.
+        with self._load_lock:
+            if self._session is not None:
+                return
+            import onnxruntime as ort
+            import pandas as pd
+            from huggingface_hub import hf_hub_download
 
-        print("Loading Kaloscope 2.0 (artist style classifier)...")
-        model_path = hf_hub_download(repo_id=KALOSCOPE_REPO, filename=_MODEL_FILE)
-        labels_path = hf_hub_download(repo_id=KALOSCOPE_REPO, filename=_LABELS_FILE)
+            print("Loading Kaloscope 2.0 (artist style classifier)...")
+            model_path = hf_hub_download(repo_id=KALOSCOPE_REPO, filename=_MODEL_FILE)
+            labels_path = hf_hub_download(repo_id=KALOSCOPE_REPO, filename=_LABELS_FILE)
 
-        self._session = ort.InferenceSession(model_path, providers=self._providers())
-        labels_df = pd.read_csv(labels_path)
-        labels_df["class_name"] = labels_df["class_name"].str.strip("'")
-        self._labels = dict(zip(labels_df["class_id"], labels_df["class_name"]))
+            session = ort.InferenceSession(model_path, providers=self._providers())
+            labels_df = pd.read_csv(labels_path)
+            labels_df["class_name"] = labels_df["class_name"].str.strip("'")
+            self._labels = dict(zip(labels_df["class_id"], labels_df["class_name"]))
+            self._session = session
 
     def infer(self, image: Image.Image, top_k: int = 10) -> List[Dict[str, float]]:
         self.load()

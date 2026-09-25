@@ -5,6 +5,7 @@ image, each holding per-category tag dicts. Routers merge non-rating categories
 into the flat ``tags`` map and run :func:`app.formatting.format_tags`.
 """
 
+import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
@@ -37,6 +38,8 @@ class Tagger(ABC):
     def __init__(self, spec: ModelSpec):
         self.spec = spec
         self._loaded = False
+        # Routers tag in worker threads; only one of them may load the weights.
+        self._load_lock = threading.Lock()
 
     @property
     def id(self) -> str:
@@ -64,7 +67,9 @@ class Tagger(ABC):
         category_thresholds: Optional[Dict[str, float]] = None,
     ) -> List[TagResult]:
         if not self._loaded:
-            self.load()
+            with self._load_lock:
+                if not self._loaded:
+                    self.load()
         gt = self.spec.default_threshold if general_threshold is None else general_threshold
         ct = (
             self.spec.default_character_threshold

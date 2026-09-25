@@ -11,12 +11,15 @@ RUN apt-get update && apt-get install -y libgl1-mesa-glx libglib2.0-0 \
 # - timm powers the animetimm dbv4 taggers (safetensors, PyTorch from base image).
 # - numpy<2.0 avoids binary incompatibility with the PyTorch/ONNX wheels.
 COPY requirements.txt .
+# - PyPI's onnxruntime-gpu 1.18.0 is built for CUDA 11, so replace it with the
+#   CUDA 12 / cuDNN 8 build of the same version from ONNX Runtime's feed.
 RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir "onnxruntime-gpu==1.17.1" \
-       --extra-index-url https://aiinfra.pkgs.visualstudio.com/Public/packages/onnxruntime-cuda-12
+    && pip install --no-cache-dir --force-reinstall --no-deps "onnxruntime-gpu==1.18.0" \
+       --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
 
-# Make the base image's CUDA libs discoverable by ONNX Runtime
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/conda/lib/python3.10/site-packages/nvidia/cublas/lib:/opt/conda/lib/python3.10/site-packages/nvidia/cudnn/lib
+# Make the base image's CUDA libs discoverable by ONNX Runtime: cuBLAS, cuFFT,
+# cuRAND and cudart 12 live in the conda env, cuDNN 8 is bundled with PyTorch.
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/conda/lib:/opt/conda/lib/python3.10/site-packages/torch/lib
 
 # Models download to the HF cache on first use. Mount a volume here (and set
 # HF_HOME) to persist them across restarts. HF_TOKEN is required for the gated

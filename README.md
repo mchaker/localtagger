@@ -86,8 +86,8 @@ every load even when the weights are already cached.
 
 `pixai-v1.0` runs [noaione/pixai-tagger-v1.0-onnx](https://huggingface.co/noaione/pixai-tagger-v1.0-onnx),
 an FP32 ONNX export of the official checkpoint, with ONNX Runtime (CUDA when
-`DEVICE` resolves to `cuda`, otherwise CPU). The export needs ONNX opset 20
-(ONNX Runtime 1.17+). Preprocessing mirrors the upstream 1008 × 1008 resize/pad.
+`DEVICE` resolves to `cuda`, otherwise CPU). The export is ONNX IR 10, opset 20
+(ONNX Runtime 1.18+). Preprocessing mirrors the upstream 1008 × 1008 resize/pad.
 Its `style` labels are exposed as `artist` in the API and Farterrogator.
 
 To run the official checkpoint through its Transformers pipeline instead

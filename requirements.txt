@@ -13,7 +13,7 @@ timm
 torch==2.2.2
 torchvision==0.17.2
 transformers>=4.57.6,<5
-onnxruntime-gpu==1.17.1
+onnxruntime-gpu==1.18.0
 
 # Model hosting / data
 huggingface_hub

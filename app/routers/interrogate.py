@@ -11,6 +11,7 @@ import zipfile
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from PIL import Image
 from starlette.background import BackgroundTask
@@ -64,6 +65,8 @@ def _tag_images(
     meta_threshold: Optional[float] = None,
     rating_threshold: Optional[float] = None,
 ) -> List[dict]:
+    """Tag and format a batch. Blocks for the whole model load and inference,
+    so async routes must call it through ``run_in_threadpool``."""
     tagger = manager.get(model_id)
     category_thresholds = {
         category: value for category, value in {
@@ -155,7 +158,8 @@ async def interrogate_post(
         batch_files = file[i : i + BATCH_SIZE]
         batch_images = [load_image_from_bytes(await f.read()) for f in batch_files]
         all_results.extend(
-            _tag_images(
+            await run_in_threadpool(
+                _tag_images,
                 manager,
                 model_id,
                 batch_images,
@@ -191,7 +195,9 @@ async def _zip_response(manager, model_id, file, **fmt):
                     batch_images.append(load_image_from_bytes(data))
                     batch_names.append(f.filename)
 
-                results = _tag_images(manager, model_id, batch_images, **fmt)
+                results = await run_in_threadpool(
+                    _tag_images, manager, model_id, batch_images, **fmt
+                )
                 for j, res in enumerate(results):
                     zf.writestr(batch_names[j], batch_bytes[j])
                     base_name = batch_names[j].rsplit(".", 1)[0]
@@ -211,8 +217,10 @@ async def _zip_response(manager, model_id, file, **fmt):
         raise
 
 
+# Plain ``def``: FastAPI runs it in a worker thread, so the URL downloads and
+# tagging don't block the event loop.
 @router.get("/interrogate")
-async def interrogate_get(
+def interrogate_get(
     url: List[str] = Query(...),
     model: Optional[str] = Query(None, description="Model id from /models"),
     threshold: Optional[float] = Query(None),

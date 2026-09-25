@@ -37,15 +37,24 @@ def _prepare_image(image: Image.Image, size: int = IMAGE_SIZE) -> np.ndarray:
         image = canvas.convert("RGB")
 
     width, height = image.size
-    if width != size or height != size:
+    if width == size and height == size:
+        arr = np.asarray(image, dtype=np.float32)
+    else:
         scale = min(size / width, size / height)
         new_width, new_height = int(width * scale), int(height * scale)
-        image = image.resize((new_width, new_height), Image.Resampling.BILINEAR)
-        padded = Image.new("RGB", (size, size), (0, 0, 0))
-        padded.paste(image, ((size - new_width) // 2, (size - new_height) // 2))
-        image = padded
+        # Upstream resizes the float tensor. Resizing each channel in PIL's
+        # float mode matches it; an 8-bit resize would be off by up to 1/255.
+        resized = np.stack([
+            np.asarray(
+                image.getchannel(c).convert("F").resize((new_width, new_height), Image.Resampling.BILINEAR)
+            )
+            for c in range(3)
+        ], axis=-1)
+        arr = np.zeros((size, size, 3), dtype=np.float32)
+        top, left = (size - new_height) // 2, (size - new_width) // 2
+        arr[top:top + new_height, left:left + new_width] = resized
 
-    arr = np.asarray(image, dtype=np.float32) / 255.0
+    arr = arr / 255.0
     arr = (arr - 0.5) / 0.5
     return arr.transpose(2, 0, 1)[None, ...]
 

@@ -157,6 +157,12 @@ class PixaiOnnxTests(unittest.TestCase):
         self.assertTrue(np.all(arr[0, :, :252] == -1))
         self.assertTrue(np.all(arr[0, :, 252:756] == 1))
         self.assertTrue(np.all(arr[0, :, 756:] == -1))
+        # Resizing happens in float, like upstream: halving alternating black
+        # and white columns gives exact mid-grey (0), not 8-bit 128/255.
+        stripes = np.zeros((2 * IMAGE_SIZE, 2 * IMAGE_SIZE, 3), dtype=np.uint8)
+        stripes[:, 1::2] = 255
+        grey = _prepare_image(Image.fromarray(stripes))
+        self.assertTrue(np.allclose(grey[0, :, :, 1:-1], 0, atol=1e-6))
         # Transparency is flattened onto white, not black.
         clear = _prepare_image(Image.new("RGBA", (IMAGE_SIZE, IMAGE_SIZE), (0, 0, 0, 0)))
         self.assertTrue(np.all(clear == 1))

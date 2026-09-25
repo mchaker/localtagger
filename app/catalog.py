@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 
 import yaml
 
-VALID_FAMILIES = {"wd14", "pixai", "pixai_transformers", "camie", "animetimm", "wd14_st"}
+VALID_FAMILIES = {"wd14", "pixai", "pixai_onnx", "pixai_transformers", "camie", "animetimm", "wd14_st"}
 
 
 @dataclass(frozen=True)
@@ -31,7 +31,6 @@ class ModelSpec:
     default_threshold: float
     default_character_threshold: float
     default_thresholds: Dict[str, float] = field(default_factory=dict)
-    dtype: str = "float32"
 
 
 class Catalog:
@@ -79,7 +78,6 @@ def _parse_spec(raw: dict) -> ModelSpec:
         default_threshold=float(raw.get("default_threshold", 0.35)),
         default_character_threshold=float(raw.get("default_character_threshold", 0.85)),
         default_thresholds={k: float(v) for k, v in raw.get("default_thresholds", {}).items()},
-        dtype=raw.get("dtype", "float32"),
     )
 
 

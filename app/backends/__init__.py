@@ -11,6 +11,7 @@ from .animetimm import AnimetimmTagger
 from .base import Tagger
 from .camie import CamieTagger
 from .pixai import PixaiTagger
+from .pixai_onnx import PixaiOnnxTagger
 from .pixai_transformers import PixaiTransformersTagger
 from .wd14 import WD14Tagger
 from .wd14_st import WD14SafetensorsTagger
@@ -18,6 +19,7 @@ from .wd14_st import WD14SafetensorsTagger
 _FAMILY_BACKENDS = {
     "wd14": WD14Tagger,
     "pixai": PixaiTagger,
+    "pixai_onnx": PixaiOnnxTagger,
     "pixai_transformers": PixaiTransformersTagger,
     "camie": CamieTagger,
     "animetimm": AnimetimmTagger,

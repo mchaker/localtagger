@@ -19,31 +19,15 @@ class PixaiTransformersTagger(Tagger):
         import torch
         from transformers import pipeline
 
-        device = settings.resolve_device()
-        # Keep CPU inference in FP32. The optional mixed-BF16 checkpoint is
-        # useful on supported GPUs, and keeps its classification head in FP32.
-        use_bf16 = (
-            self.spec.dtype == "bfloat16"
-            and device.startswith("cuda")
-            and torch.cuda.is_bf16_supported()
-        )
-        tagger = pipeline(
+        self._pipeline = pipeline(
             model=self.spec.repo,
             image_processor=self.spec.repo,
             trust_remote_code=True,
             token=settings.hf_token,
-            device=device,
+            device=settings.resolve_device(),
             dtype=torch.float32,
             use_fast=False,
         )
-        if use_bf16:
-            # Loading the whole checkpoint as BF16 would round the FP32 head
-            # before we could restore its dtype. Preserve its original values.
-            head_state = {name: value.clone() for name, value in tagger.model.head.state_dict().items()}
-            tagger.model.bfloat16()
-            tagger.model.head.float()
-            tagger.model.head.load_state_dict(head_state)
-        self._pipeline = tagger
         self._loaded = True
 
     def _tag_one(

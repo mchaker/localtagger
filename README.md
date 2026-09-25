@@ -8,20 +8,20 @@ Inference is powered by [`dghs-imgutils`](https://dghs-imgutils.deepghs.org/)
 (WD14 v3, Pixai v0.9 and Camie v2, ONNX) and
 [`timm`](https://github.com/huggingface/pytorch-image-models)
 (animetimm dbv4 and safetensors-only WD-family taggers, PyTorch/safetensors),
-[PixAI v1.0](https://huggingface.co/pixai-labs/pixai-tagger-v1.0) via its native
-Transformers pipeline (PyTorch), plus the **Kaloscope 2.0** artist-style classifier
-(ONNX).
+[PixAI v1.0](https://huggingface.co/pixai-labs/pixai-tagger-v1.0) via an
+[ONNX export](https://huggingface.co/noaione/pixai-tagger-v1.0-onnx) (ONNX Runtime),
+plus the **Kaloscope 2.0** artist-style classifier (ONNX).
 
 ## Features
 -   **Multi-Model Tagging** — pick a model per request via `?model=<id>`. Models
     are grouped for the picker (`group` → `label`):
     -   **WD Tagger v3**: `wd-eva02-large-v3` (EVA02), `wd-swinv2-v3` (SwinV2),
-        `wd-eva02-canary-2026` (EVA02 Canary), `pixai-v0.9` (Pixai v0.9).
+        `wd-eva02-canary-2026` (EVA02 Canary), `pixai-v0.9` (Pixai v0.9),
+        `pixai-v1.0` (PixAI v1.0).
     -   **Animetimm dbv4**: `animetimm-mobilenetv4` (MobileNetV4),
         `animetimm-swinv2-base` (SwinV2), `animetimm-caformer-b36` (CAFormer),
         `animetimm-eva02-large` (EVA02), `animetimm-convnextv2-huge` (ConvNeXt).
     -   **Camie v2**: `camie-v2` (Camie).
-    -   **PixAI**: `pixai-v1.0` (enabled by default), `pixai-v1.0-bf16` (opt-in).
 -   **Config-driven model catalog** — add models by editing
     [`app/models.yaml`](app/models.yaml); no code changes needed.
 -   **Model discovery** — `GET /models` lets the frontend list models without a
@@ -84,10 +84,16 @@ every load even when the weights are already cached.
 
 ## PixAI v1.0
 
-`pixai-v1.0` loads the official checkpoint and its custom Transformers code on
-first use (`trust_remote_code=True`). No deepghs ONNX conversion is needed.
-The native processor preserves the model's 1008 × 1008 resize/pad behavior.
+`pixai-v1.0` runs [noaione/pixai-tagger-v1.0-onnx](https://huggingface.co/noaione/pixai-tagger-v1.0-onnx),
+an FP32 ONNX export of the official checkpoint, with ONNX Runtime (CUDA when
+`DEVICE` resolves to `cuda`, otherwise CPU). The export needs ONNX opset 20
+(ONNX Runtime 1.17+). Preprocessing mirrors the upstream 1008 × 1008 resize/pad.
 Its `style` labels are exposed as `artist` in the API and Farterrogator.
+
+To run the official checkpoint through its Transformers pipeline instead
+(`trust_remote_code=True`, PyTorch), set the model's `family` to
+`pixai_transformers` and `repo` to `pixai-labs/pixai-tagger-v1.0` in
+`app/models.yaml`.
 
 The recommended cutoffs are general **0.17**, character **0.27**, copyright
 **0.24**, artist/style **0.15**, meta **0.17**, and rating **0.41**. `/models`
@@ -95,12 +101,7 @@ exposes the latter four in `default_thresholds`, alongside the existing
 `default_threshold` and `default_character_threshold` fields. Explicit request
 parameters override them, including when downloading ZIP datasets.
 
-To use the [mixed-BF16 checkpoint](https://huggingface.co/DraconicDragon/pixai-tagger-v1.0-mixed-bf16),
-include `pixai-v1.0-bf16` in `ENABLED_MODELS`. This setting replaces the default
-model list, so include any other models you want to keep. Supported CUDA GPUs
-use BF16 with an FP32 classification head; CPU and unsupported GPUs use FP32.
-Both variants need the updated PyTorch/Transformers dependencies in this repo.
-Deploy the backend changes before selecting these models in Farterrogator;
+Deploy the backend changes before selecting this model in Farterrogator;
 the frontend discovers only models advertised by the selected server.
 
 ## Kubernetes Deployment

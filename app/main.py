@@ -1,5 +1,7 @@
 """FastAPI application factory and entrypoint."""
 
+import os
+
 from fastapi import FastAPI
 
 from app import __version__
@@ -9,6 +11,7 @@ from app.manager import ModelManager
 from app.routers import catalog as catalog_router
 from app.routers import interrogate as interrogate_router
 from app.routers import kaloscope as kaloscope_router
+from app.schemas import HealthResponse
 
 
 def create_app() -> FastAPI:
@@ -27,9 +30,10 @@ def create_app() -> FastAPI:
     app.include_router(catalog_router.router)
     app.include_router(kaloscope_router.router)
 
-    @app.get("/health")
+    @app.get("/health", response_model=HealthResponse)
     async def health_check():
-        return {"status": "ok"}
+        # GIT_SHA is baked in at image build time (see Dockerfile).
+        return HealthResponse(version=__version__, git_sha=os.environ.get("GIT_SHA") or None)
 
     print(
         "localtagger ready. Enabled models: "

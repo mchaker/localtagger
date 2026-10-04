@@ -16,8 +16,11 @@ spec:
     spec:
       containers:
       - name: localtagger
-        image: ghcr.io/mchaker/localtagger:main
-        imagePullPolicy: Always
+        # Pinned to a release so a deploy is repeatable. To upgrade, bump
+        # app/__init__.py __version__, push the matching vX.Y.Z git tag (CI then
+        # publishes this image), and change this line.
+        image: ghcr.io/mchaker/localtagger:2.1.0
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
         env:

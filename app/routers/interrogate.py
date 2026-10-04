@@ -20,6 +20,7 @@ from app.deps import get_manager
 from app.formatting import format_tags
 from app.image_utils import download_image, load_image_from_bytes
 from app.manager import ModelManager
+from app.schemas import InterrogateResult
 
 router = APIRouter()
 
@@ -107,8 +108,12 @@ def _tag_images(
     return formatted
 
 
-@router.post("/interrogate/{alias}")
-@router.post("/interrogate")
+# output_format=zip returns a dataset archive instead of the JSON list.
+_ZIP_RESPONSE = {200: {"content": {"application/zip": {}}}}
+
+
+@router.post("/interrogate/{alias}", response_model=List[InterrogateResult], responses=_ZIP_RESPONSE)
+@router.post("/interrogate", response_model=List[InterrogateResult], responses=_ZIP_RESPONSE)
 async def interrogate_post(
     alias: Optional[str] = None,
     file: List[UploadFile] = File(...),
@@ -219,7 +224,7 @@ async def _zip_response(manager, model_id, file, **fmt):
 
 # Plain ``def``: FastAPI runs it in a worker thread, so the URL downloads and
 # tagging don't block the event loop.
-@router.get("/interrogate")
+@router.get("/interrogate", response_model=List[InterrogateResult])
 def interrogate_get(
     url: List[str] = Query(...),
     model: Optional[str] = Query(None, description="Model id from /models"),

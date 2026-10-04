@@ -5,6 +5,7 @@ weights loaded on first use, then cached. Unknown/disabled ids raise an HTTP 404
 so routers get a clean error.
 """
 
+import threading
 from typing import Dict
 
 from fastapi import HTTPException
@@ -18,6 +19,7 @@ class ModelManager:
     def __init__(self, catalog: Catalog):
         self.catalog = catalog
         self._taggers: Dict[str, Tagger] = {}
+        self._lock = threading.Lock()
         self.kaloscope = KaloscopeClassifier()
 
     def resolve(self, model_id: str) -> str:
@@ -32,11 +34,14 @@ class ModelManager:
 
     def get(self, model_id: str) -> Tagger:
         self.resolve(model_id)
-        tagger = self._taggers.get(model_id)
-        if tagger is None:
-            spec = self.catalog.get(model_id)
-            tagger = build_tagger(spec)
-            self._taggers[model_id] = tagger
+        # Called from worker threads: build each tagger once so concurrent
+        # first requests share one instance (and one copy of its weights).
+        with self._lock:
+            tagger = self._taggers.get(model_id)
+            if tagger is None:
+                spec = self.catalog.get(model_id)
+                tagger = build_tagger(spec)
+                self._taggers[model_id] = tagger
         return tagger
 
     def is_loaded(self, model_id: str) -> bool:

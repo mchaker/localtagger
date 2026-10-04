@@ -106,11 +106,17 @@ the frontend discovers only models advertised by the selected server.
 
 ## Kubernetes Deployment
 
-### 1. Build & Push Image
+### 1. Release an image
+CI publishes images to `ghcr.io/mchaker/localtagger`. Pushes to `main` move the
+`main` tag; a `vX.Y.Z` git tag publishes immutable `X.Y.Z` and `X.Y` tags.
+
 ```bash
-docker build -t ghcr.io/mchaker/localtagger:main .
-docker push ghcr.io/mchaker/localtagger:main
+# bump __version__ in app/__init__.py to 2.1.0 in a PR, merge it, then:
+git tag v2.1.0 && git push origin v2.1.0
 ```
+
+The publish job fails if the tag does not match `__version__`.
+`k8s/deployment.yaml` pins a release tag; change it when you upgrade.
 
 ### 2. Deploy
 ```bash
@@ -125,9 +131,27 @@ kubectl apply -f k8s/
 -   **Model Caching**: models download to `HF_HOME` on first use (several GB).
     Mount a PVC there to persist across restarts — see the commented
     `volumeMounts`/`volumes`/`HF_TOKEN` blocks in `k8s/deployment.yaml`.
--   **Health Check**: `GET /health` for liveness/readiness probes.
+-   **Health Check**: `GET /health` for liveness/readiness probes. It returns
+    `{"status": "ok", "version": "2.1.0", "git_sha": "<commit>"}` so you can
+    tell which build is running.
 
 ---
+
+## API contract
+
+[`openapi.json`](openapi.json) is the API contract, generated from the FastAPI
+app. Farterrogator generates its client types from a copy of it, so any change
+to a route, parameter or response model must come with a regenerated file:
+
+```bash
+python scripts/export_openapi.py          # rewrite openapi.json
+python scripts/export_openapi.py --check  # what CI runs
+```
+
+CI also compares a PR's `openapi.json` with `main` and fails on changes that
+would break Farterrogator (a removed route, parameter or response field, or a
+newly required parameter). Label the PR `breaking-api` when that is intended,
+then update Farterrogator after the backend release ships.
 
 ## API Usage
 

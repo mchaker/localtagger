@@ -29,6 +29,11 @@ ENV HF_HOME=/root/.cache/huggingface
 COPY app/ ./app/
 COPY scripts/ ./scripts/
 
+# The commit this image was built from, reported by GET /health. CI passes it
+# as a build arg; local builds leave it empty.
+ARG GIT_SHA=""
+ENV GIT_SHA=$GIT_SHA
+
 # Optional: bake all model weights into the image so the runtime needs no token.
 # Uses a BuildKit secret so the token is never written to a layer. The token's
 # account must have accepted the gated animetimm terms first. Enable with:

@@ -1,6 +1,6 @@
 """Pydantic response models."""
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -45,3 +45,11 @@ class ArtistMatch(BaseModel):
 class KaloscopeResponse(BaseModel):
     artists: List[ArtistMatch]
     model: str = "kaloscope-2.0"
+
+
+class HealthResponse(BaseModel):
+    status: str = "ok"
+    # Backend release (app.__version__) and the git commit the image was built
+    # from, so clients and operators can tell which build they are talking to.
+    version: str
+    git_sha: Optional[str] = None

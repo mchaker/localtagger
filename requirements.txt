@@ -1,8 +1,9 @@
-# Web framework
-fastapi
+# Web framework. fastapi/pydantic are pinned because they render openapi.json,
+# the API contract Farterrogator generates its types from.
+fastapi==0.142.2
 uvicorn[standard]
 python-multipart
-pydantic>=2
+pydantic==2.13.5
 
 # Inference: imgutils (WD14 + Pixai + Camie, ONNX) and timm (animetimm,
 # safetensors). >=0.19 is required for imgutils.tagging.get_pixai_tags.

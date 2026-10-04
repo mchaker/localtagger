@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    types: [ opened, synchronize, reopened, labeled, unlabeled ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same Python as the pytorch/pytorch:2.2.2 base image.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      # CPU torch keeps the runner install small; the version matches requirements.txt.
+      - name: Install dependencies
+        run: |
+          pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt httpx
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: openapi.json is up to date
+        run: python scripts/export_openapi.py --check
+
+      # Farterrogator generates its client types from openapi.json, so removing
+      # or retyping anything it reads breaks the frontend. Add the
+      # `breaking-api` label to a PR that does this on purpose.
+      - name: No breaking API changes
+        if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'breaking-api')
+        run: |
+          git fetch --depth=1 origin "${{ github.base_ref }}"
+          if git cat-file -e FETCH_HEAD:openapi.json 2>/dev/null; then
+            git show FETCH_HEAD:openapi.json > /tmp/base-openapi.json
+            python scripts/openapi_breaking.py /tmp/base-openapi.json openapi.json
+          else
+            echo "Base branch has no openapi.json yet; nothing to compare."
+          fi

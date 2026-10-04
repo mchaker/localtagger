@@ -27,7 +27,8 @@ jobs:
 
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # write: a push to main that bumps __version__ creates the vX.Y.Z git tag.
+      contents: write
       packages: write
       # This is used to complete the identity challenge
       # with sigstore/fulcio when running outside of PRs.
@@ -45,6 +46,24 @@ jobs:
           if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
             echo "Tag ${GITHUB_REF_NAME} does not match app/__init__.py __version__ ${version}"
             exit 1
+          fi
+
+      # Releases are automatic: when a push to main carries a __version__ with
+      # no vX.Y.Z git tag yet, this run publishes the X.Y.Z and X.Y images and
+      # then creates the tag. Bumping __version__ in a PR is the whole release.
+      - name: Detect new release version
+        id: release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          version=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' app/__init__.py)
+          if git ls-remote --exit-code --tags origin "refs/tags/v${version}" >/dev/null; then
+            echo "v${version} already exists; not a release."
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Releasing v${version}."
+            echo "new=true" >> "$GITHUB_OUTPUT"
+            echo "version=${version}" >> "$GITHUB_OUTPUT"
+            echo "minor=${version%.*}" >> "$GITHUB_OUTPUT"
           fi
 
       # Install the cosign tool except on PR
@@ -89,6 +108,8 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,enable=${{ github.event_name != 'schedule' }}
+            type=raw,value=${{ steps.release.outputs.version || 'unused' }},enable=${{ steps.release.outputs.new == 'true' }}
+            type=raw,value=${{ steps.release.outputs.minor || 'unused' }},enable=${{ steps.release.outputs.new == 'true' }}
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
@@ -119,3 +140,11 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+
+      # Tag only after the image is published. A tag pushed with GITHUB_TOKEN
+      # does not start another workflow run, so the image is not rebuilt.
+      - name: Create release tag
+        if: steps.release.outputs.new == 'true'
+        run: |
+          git tag "v${{ steps.release.outputs.version }}" "${GITHUB_SHA}"
+          git push origin "v${{ steps.release.outputs.version }}"

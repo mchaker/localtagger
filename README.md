@@ -107,18 +107,14 @@ the frontend discovers only models advertised by the selected server.
 ## Kubernetes Deployment
 
 ### 1. Release an image
-CI publishes images to `ghcr.io/mchaker/localtagger`. Pushes to `main` move the
-`main` tag. A `vX.Y.Z` git tag publishes `X.Y.Z`, which is never rebuilt, and
-`X.Y`, which moves to the newest patch. Pin deployments to `X.Y.Z`.
+Releases are automatic. Bump `__version__` in `app/__init__.py` in a PR and
+merge it: the push to `main` publishes `ghcr.io/mchaker/localtagger:X.Y.Z`
+(never rebuilt) and `X.Y` (moves to the newest patch), then creates the
+`vX.Y.Z` git tag. Pushes that don't change the version only move `main`.
 
-```bash
-# bump __version__ in app/__init__.py to 2.1.0 in a PR, merge it, then:
-git tag v2.1.0 && git push origin v2.1.0
-```
-
-The publish job fails if the tag does not match `__version__`.
-`k8s/deployment.yaml` pins a release tag; change it when you upgrade. The
-`2.1.0` image it pins only exists once the `v2.1.0` tag has been pushed.
+Pushing a `vX.Y.Z` tag by hand also publishes, as long as it matches
+`__version__`. `k8s/deployment.yaml` pins a release tag; bump it in the same PR
+as the version.
 
 ### 2. Deploy
 ```bash

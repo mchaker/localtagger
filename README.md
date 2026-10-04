@@ -108,7 +108,8 @@ the frontend discovers only models advertised by the selected server.
 
 ### 1. Release an image
 CI publishes images to `ghcr.io/mchaker/localtagger`. Pushes to `main` move the
-`main` tag; a `vX.Y.Z` git tag publishes immutable `X.Y.Z` and `X.Y` tags.
+`main` tag. A `vX.Y.Z` git tag publishes `X.Y.Z`, which is never rebuilt, and
+`X.Y`, which moves to the newest patch. Pin deployments to `X.Y.Z`.
 
 ```bash
 # bump __version__ in app/__init__.py to 2.1.0 in a PR, merge it, then:
@@ -116,7 +117,8 @@ git tag v2.1.0 && git push origin v2.1.0
 ```
 
 The publish job fails if the tag does not match `__version__`.
-`k8s/deployment.yaml` pins a release tag; change it when you upgrade.
+`k8s/deployment.yaml` pins a release tag; change it when you upgrade. The
+`2.1.0` image it pins only exists once the `v2.1.0` tag has been pushed.
 
 ### 2. Deploy
 ```bash
@@ -149,9 +151,10 @@ python scripts/export_openapi.py --check  # what CI runs
 ```
 
 CI also compares a PR's `openapi.json` with `main` and fails on changes that
-would break Farterrogator (a removed route, parameter or response field, or a
-newly required parameter). Label the PR `breaking-api` when that is intended,
-then update Farterrogator after the backend release ships.
+would break Farterrogator: a removed route, a removed, retyped or newly required
+parameter, or a response field removed or retyped at any depth. Label the PR
+`breaking-api` when that is intended, then update Farterrogator after the
+backend release ships.
 
 ## API Usage
 

@@ -2,14 +2,15 @@
 
     python scripts/openapi_breaking.py OLD.json NEW.json
 
-Breaking = a route or method removed, a parameter removed or newly required,
-a request field newly required, or a response field removed or retyped.
+Breaking = a route or method removed, a parameter removed, retyped or newly
+required, a request field newly required, or a response field removed or
+retyped at any depth (nested models, list items and map values included).
 Additions are fine. Exits 1 when anything breaking is found.
 """
 
 import json
 import sys
-from typing import Dict, List
+from typing import List
 
 
 def _resolve(spec: dict, schema: dict) -> dict:
@@ -28,16 +29,38 @@ def _type(spec: dict, schema: dict) -> str:
     return schema.get("type", "object")
 
 
-def _response_fields(spec: dict, op: dict) -> Dict[str, str]:
-    """Field name -> type of the 200 JSON body (array items unwrapped)."""
+def _compare_response(old_spec, old, new_spec, new, where, problems, seen=frozenset()):
+    """Recursively flag removed or retyped fields between two response schemas."""
+    key = (old.get("$ref"), new.get("$ref"))
+    if key != (None, None):
+        if key in seen:
+            return
+        seen = seen | {key}
+    old, new = _resolve(old_spec, old), _resolve(new_spec, new)
+
+    old_type, new_type = _type(old_spec, old), _type(new_spec, new)
+    if old_type != new_type:
+        problems.append(f"{where}: changed from {old_type} to {new_type}")
+        return
+
+    for name, prop in old.get("properties", {}).items():
+        new_prop = new.get("properties", {}).get(name)
+        if new_prop is None:
+            problems.append(f"{where}.{name}: removed")
+        else:
+            _compare_response(old_spec, prop, new_spec, new_prop, f"{where}.{name}", problems, seen)
+    if isinstance(old.get("items"), dict) and isinstance(new.get("items"), dict):
+        _compare_response(old_spec, old["items"], new_spec, new["items"], f"{where}[]", problems, seen)
+    if isinstance(old.get("additionalProperties"), dict) and isinstance(new.get("additionalProperties"), dict):
+        _compare_response(
+            old_spec, old["additionalProperties"], new_spec, new["additionalProperties"],
+            f"{where}{{}}", problems, seen,
+        )
+
+
+def _json_200(op: dict):
     content = op.get("responses", {}).get("200", {}).get("content", {})
-    schema = content.get("application/json", {}).get("schema")
-    if not schema:
-        return {}
-    schema = _resolve(spec, schema)
-    if schema.get("type") == "array":
-        schema = _resolve(spec, schema.get("items", {}))
-    return {name: _type(spec, prop) for name, prop in schema.get("properties", {}).items()}
+    return content.get("application/json", {}).get("schema")
 
 
 def _request_required(spec: dict, op: dict) -> set:
@@ -70,19 +93,22 @@ def breaking_changes(old: dict, new: dict) -> List[str]:
                 was_required = old_params.get(name, {}).get("required", False)
                 if param.get("required") and not was_required:
                     problems.append(f"{where}: parameter '{name}' is now required")
+                if name in old_params:
+                    old_kind = _type(old, old_params[name].get("schema", {}))
+                    new_kind = _type(new, param.get("schema", {}))
+                    if old_kind != new_kind:
+                        problems.append(
+                            f"{where}: parameter '{name}' changed from {old_kind} to {new_kind}"
+                        )
 
             for name in _request_required(new, new_op) - _request_required(old, old_op):
                 problems.append(f"{where}: request field '{name}' is now required")
 
-            old_fields = _response_fields(old, old_op)
-            new_fields = _response_fields(new, new_op)
-            for name, kind in old_fields.items():
-                if name not in new_fields:
-                    problems.append(f"{where}: response field '{name}' removed")
-                elif new_fields[name] != kind:
-                    problems.append(
-                        f"{where}: response field '{name}' changed from {kind} to {new_fields[name]}"
-                    )
+            old_body, new_body = _json_200(old_op), _json_200(new_op)
+            if old_body and not new_body:
+                problems.append(f"{where}: JSON response removed")
+            elif old_body and new_body:
+                _compare_response(old, old_body, new, new_body, f"{where} response", problems)
     return problems
 
 

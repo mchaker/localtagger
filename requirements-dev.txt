@@ -1,0 +1,9 @@
+# Test dependencies, on top of the runtime ones:
+#   pip install -r requirements-dev.txt
+-r requirements.txt
+
+# tests/test_concurrency.py drives the app through httpx.ASGITransport, and
+# starlette.testclient (used by tests/test_pixai.py) needs httpx2 on Starlette
+# 1.x; older Starlette falls back to httpx.
+httpx
+httpx2

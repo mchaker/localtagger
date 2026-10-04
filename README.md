@@ -259,8 +259,8 @@ python -m app.main                   # serves on :8000
 python test_api.py --image some.jpg --model wd-swinv2-v3
 python test_batch.py --model wd-swinv2-v3 img1.jpg img2.jpg
 
-# PixAI API/adapter regressions (no model downloads)
-pip install httpx
+# unit tests (no model downloads)
+pip install -r requirements-dev.txt
 python -m unittest discover -s tests -v
 ```
 

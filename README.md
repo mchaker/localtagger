@@ -10,7 +10,7 @@ Inference is powered by [`dghs-imgutils`](https://dghs-imgutils.deepghs.org/)
 (animetimm dbv4 and safetensors-only WD-family taggers, PyTorch/safetensors),
 [PixAI v1.0](https://huggingface.co/pixai-labs/pixai-tagger-v1.0) via an
 [ONNX export](https://huggingface.co/noaione/pixai-tagger-v1.0-onnx) (ONNX Runtime),
-plus the **Kaloscope 2.0** artist-style classifier (ONNX).
+plus the **Kaloscope 3.0 Preview** artist-style classifier (DINOv3 ViT-B/16, 44,129 artists).
 
 ## Features
 -   **Multi-Model Tagging** — pick a model per request via `?model=<id>`. Models
@@ -130,7 +130,7 @@ kubectl apply -f k8s/
     Mount a PVC there to persist across restarts — see the commented
     `volumeMounts`/`volumes`/`HF_TOKEN` blocks in `k8s/deployment.yaml`.
 -   **Health Check**: `GET /health` for liveness/readiness probes. It returns
-    `{"status": "ok", "version": "2.1.0", "git_sha": "<commit>"}` so you can
+    `{"status": "ok", "version": "2.2.0", "git_sha": "<commit>"}` so you can
     tell which build is running.
 
 ---
@@ -209,7 +209,7 @@ to concrete models for backward compatibility.
 
 ### `POST /kaloscope/infer` — artist-style classification
 
-`file` (image) + `top_k` (default 10) → `{ "artists": [{"name", "score"}], "model": "kaloscope-2.0" }`
+`file` (image) + `top_k` (default 10) → `{ "artists": [{"name", "score"}], "model": "kaloscope-3.0-preview" }`
 
 ---
 

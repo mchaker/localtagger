@@ -44,7 +44,7 @@ class ArtistMatch(BaseModel):
 
 class KaloscopeResponse(BaseModel):
     artists: List[ArtistMatch]
-    model: str = "kaloscope-2.0"
+    model: str = "kaloscope-3.0-preview"
 
 
 class HealthResponse(BaseModel):

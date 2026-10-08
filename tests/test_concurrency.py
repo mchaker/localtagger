@@ -110,23 +110,37 @@ class LoadOnceTests(unittest.TestCase):
             labels = Path(tmp) / "class_mapping.csv"
             labels.write_text("class_id,class_name\n0,'artist_a'\n")
 
-            def slow_session(path, providers):
+            def slow_build(state):
                 time.sleep(0.2)
-                return object()
+                return SimpleNamespace(to=lambda device: _FakeModel())
 
-            ort = SimpleNamespace(
-                InferenceSession=slow_session,
-                get_available_providers=lambda: ["CPUExecutionProvider"],
-            )
             classifier = KaloscopeClassifier()
-            with patch.dict("sys.modules", {"onnxruntime": ort}), \
-                 patch("huggingface_hub.hf_hub_download", return_value=str(labels)) as download:
+            with patch("huggingface_hub.hf_hub_download", return_value=str(labels)) as download, \
+                 patch("safetensors.torch.load_file", return_value={}), \
+                 patch("app.backends.kaloscope._build_model", side_effect=slow_build) as build:
                 self._run_concurrently(classifier.load)
 
-        self.assertEqual(download.call_count, 2)  # model + labels, one load
+        self.assertEqual(download.call_count, 2)  # weights + labels, one load
+        build.assert_called_once()
         self.assertTrue(classifier.loaded)
         self.assertEqual(classifier._labels, {0: "artist_a"})
 
+    def test_kaloscope_infer_returns_top_k_artists(self):
+        import torch
+
+        classifier = KaloscopeClassifier()
+        classifier._labels = {0: "a", 1: "b", 2: "c"}
+        classifier._transform = lambda image: torch.zeros(3, 512, 512)
+        classifier._model = lambda x: torch.tensor([[0.0, 2.0, 1.0]])
+
+        artists = classifier.infer(Image.new("RGB", (8, 8)), top_k=2)
+
+        self.assertEqual([a["name"] for a in artists], ["b", "c"])
+        self.assertGreater(artists[0]["score"], artists[1]["score"])
+
+
+class _FakeModel:
+    head = SimpleNamespace(out_features=1)
 
 if __name__ == "__main__":
     unittest.main()

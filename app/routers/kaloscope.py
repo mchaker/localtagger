@@ -1,8 +1,9 @@
-"""Kaloscope artist-style classification endpoint (unchanged behavior)."""
+"""Kaloscope artist-style classification endpoint."""
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
+from app.backends.kaloscope import MODEL_NAME
 from app.deps import get_manager
 from app.image_utils import load_image_from_bytes
 from app.manager import ModelManager
@@ -20,4 +21,4 @@ async def kaloscope_infer(
     image = load_image_from_bytes(await file.read())
     # Off the event loop, so other requests are served while this one runs.
     artists = await run_in_threadpool(manager.kaloscope.infer, image, top_k=top_k)
-    return KaloscopeResponse(artists=artists, model="kaloscope-2.0")
+    return KaloscopeResponse(artists=artists, model=MODEL_NAME)

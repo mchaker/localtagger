@@ -5,4 +5,4 @@ A FastAPI microservice that interrogates images with Danbooru taggers
 Kaloscope 3.0 artist-style classifier. See ``app.main`` for the entrypoint.
 """
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"

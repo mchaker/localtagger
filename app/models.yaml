@@ -11,6 +11,7 @@
 #   animetimm -> timm + safetensors               (gated, needs HF_TOKEN)
 #   wd14_st   -> timm + safetensors, WD14 preprocessing (ungated; for WD-family
 #                taggers published without an ONNX export)
+#   oppaioracle -> onnxruntime + selected_tags.csv (Grio43's OppaiOracle releases)
 #
 # `group` is the display heading the frontend groups models under (e.g. all
 # WD-family taggers sit beneath "WD Tagger v3"). `label` is the short
@@ -172,3 +173,24 @@ models:
     default: true
     default_threshold: 0.35
     default_character_threshold: 0.85
+
+  # --- OppaiOracle -----------------------------------------------------------
+  # Educational Use Only License (non-commercial, attribution required); see
+  # https://huggingface.co/Grio43/OppaiOracle-experimental-X1.1/blob/main/LICENSE
+  # 0.71 is the upstream micro-F1 threshold, applied to every category but
+  # rating (all four rating scores are returned, like WD14).
+  - id: oppaioracle-x1.1
+    group: oppaioracle
+    label: X1.1
+    description: experimental vit trained from scratch, 15k tags
+    family: oppaioracle
+    repo: Grio43/OppaiOracle-experimental-X1.1
+    gated: false
+    recommended: false
+    default: true
+    default_threshold: 0.71
+    default_character_threshold: 0.71
+    default_thresholds:
+      copyright: 0.71
+      artist: 0.71
+      meta: 0.71

@@ -9,8 +9,9 @@ Inference is powered by [`dghs-imgutils`](https://dghs-imgutils.deepghs.org/)
 [`timm`](https://github.com/huggingface/pytorch-image-models)
 (animetimm dbv4 and safetensors-only WD-family taggers, PyTorch/safetensors),
 [PixAI v1.0](https://huggingface.co/pixai-labs/pixai-tagger-v1.0) via an
-[ONNX export](https://huggingface.co/noaione/pixai-tagger-v1.0-onnx) (ONNX Runtime),
-plus the **Kaloscope 3.0 Preview** artist-style classifier (DINOv3 ViT-B/16, 44,129 artists).
+[ONNX export](https://huggingface.co/noaione/pixai-tagger-v1.0-onnx) and
+[OppaiOracle experimental-X1.1](https://huggingface.co/Grio43/OppaiOracle-experimental-X1.1)
+(ONNX Runtime), plus the **Kaloscope 3.0 Preview** artist-style classifier (DINOv3 ViT-B/16, 44,129 artists).
 
 ## Features
 -   **Multi-Model Tagging** — pick a model per request via `?model=<id>`. Models
@@ -22,6 +23,7 @@ plus the **Kaloscope 3.0 Preview** artist-style classifier (DINOv3 ViT-B/16, 44,
         `animetimm-swinv2-base` (SwinV2), `animetimm-caformer-b36` (CAFormer),
         `animetimm-eva02-large` (EVA02), `animetimm-convnextv2-huge` (ConvNeXt).
     -   **Camie v2**: `camie-v2` (Camie).
+    -   **OppaiOracle**: `oppaioracle-x1.1` (X1.1).
 -   **Config-driven model catalog** — add models by editing
     [`app/models.yaml`](app/models.yaml); no code changes needed.
 -   **Model discovery** — `GET /models` lets the frontend list models without a
@@ -42,7 +44,7 @@ app/
   formatting.py      # tag-string formatting + hallucination filter
   image_utils.py     # image loading helpers
   schemas.py         # pydantic response models
-  backends/          # wd14, pixai, camie, animetimm, kaloscope inference
+  backends/          # wd14, pixai, camie, animetimm, oppaioracle, kaloscope inference
   routers/           # interrogate, catalog (/models), kaloscope
 ```
 
@@ -103,6 +105,26 @@ parameters override them, including when downloading ZIP datasets.
 
 Deploy the backend changes before selecting this model in Farterrogator;
 the frontend discovers only models advertised by the selected server.
+
+## OppaiOracle experimental-X1.1
+
+`oppaioracle-x1.1` runs [Grio43/OppaiOracle-experimental-X1.1](https://huggingface.co/Grio43/OppaiOracle-experimental-X1.1),
+a 448px ViT tagger trained from scratch on Danbooru (14,994 tags across general,
+character, copyright, artist, meta and rating), with ONNX Runtime (CUDA when
+`DEVICE` resolves to `cuda`, otherwise CPU). The FP32 `model.onnx` is about
+590 MB and takes the image plus a padding mask; preprocessing follows the
+release's `infer.py` (grey 114 letterbox, downscale only, LANCZOS), and scores
+match it exactly.
+
+The default cutoff for every category except rating is **0.71**, the
+upstream best micro-F1 threshold (not per-tag calibration). All four rating
+scores are returned, as with WD14.
+
+The model is released by Grio43 under an
+[Educational Use Only License](https://huggingface.co/Grio43/OppaiOracle-experimental-X1.1/blob/main/LICENSE):
+non-commercial use only, with attribution and a link to the original repository.
+Remove it from `app/models.yaml` (or leave it out of `ENABLED_MODELS`) for any
+deployment that can't meet those terms.
 
 ## Kubernetes Deployment
 

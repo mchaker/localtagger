@@ -10,6 +10,7 @@ from app.catalog import ModelSpec
 from .animetimm import AnimetimmTagger
 from .base import Tagger
 from .camie import CamieTagger
+from .oppaioracle import OppaiOracleTagger
 from .pixai import PixaiTagger
 from .pixai_onnx import PixaiOnnxTagger
 from .pixai_transformers import PixaiTransformersTagger
@@ -24,6 +25,7 @@ _FAMILY_BACKENDS = {
     "camie": CamieTagger,
     "animetimm": AnimetimmTagger,
     "wd14_st": WD14SafetensorsTagger,
+    "oppaioracle": OppaiOracleTagger,
 }
 
 

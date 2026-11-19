@@ -8,7 +8,7 @@ Unified ``POST /interrogate?model=<id>`` plus the legacy per-model alias routes
 import os
 import tempfile
 import zipfile
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 from fastapi.concurrency import run_in_threadpool
@@ -128,7 +128,7 @@ async def interrogate_post(
     use_escape: bool = True,
     include_ranks: bool = False,
     score_descend: bool = True,
-    output_format: str = Query("json", enum=["json", "zip"]),
+    output_format: Literal["json", "zip"] = Query("json"),
     trigger_word: str = Query("", description="Optional trigger word to prepend to tags"),
     random_order: bool = Query(False, description="Randomize tag order (useful for training)"),
     manager: ModelManager = Depends(get_manager),

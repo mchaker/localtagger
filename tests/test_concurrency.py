@@ -70,6 +70,36 @@ class EventLoopTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("solo", response.json()[0]["tags"])
 
+    async def test_models_answers_while_every_worker_thread_is_busy(self):
+        # A wedged HF Space once kept answering /health while /models hung,
+        # because /models resolved its dependencies on the (exhausted) worker
+        # thread pool. The frontend then showed only the saved model.
+        import anyio.to_thread
+
+        app = create_app()
+        manager = app.state.manager
+        model_id = manager.catalog.default_model_id()
+        tagger = SlowTagger(manager.catalog.get(model_id), delay=1.0)
+        tagger._loaded = True
+        manager._taggers[model_id] = tagger
+
+        limiter = anyio.to_thread.current_default_thread_limiter()
+        saved_tokens = limiter.total_tokens
+        limiter.total_tokens = 1
+        try:
+            transport = httpx.ASGITransport(app=app)
+            async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+                slow = asyncio.create_task(client.post(
+                    f"/interrogate?model={model_id}", files={"file": ("a.png", _png(), "image/png")},
+                ))
+                self.assertTrue(await asyncio.to_thread(tagger.started.wait, 5))
+                models = await asyncio.wait_for(client.get("/models"), timeout=0.5)
+                self.assertEqual(models.status_code, 200)
+                self.assertFalse(tagger.finished.is_set())
+                await slow
+        finally:
+            limiter.total_tokens = saved_tokens
+
 
 class LoadOnceTests(unittest.TestCase):
     def _run_concurrently(self, target, n=4):
